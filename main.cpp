@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <unistd.h>
+#include "imageloader.h"
 #import <OpenAL/al.h>
 #import <OpenAL/alc.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -25,6 +26,8 @@ float sunRadius = 10;
 GLfloat light_position[] = {-1.0, 0.0, 2.0, 0.0};
 GLfloat light_position2[] = {1.0, 0.0, 0.0, 0.0};
 GLfloat emit[] = {.5, .5, .5, 0.0};
+
+GLUquadricObj *quadric;
 
 float r = 0.0;
 float g = 1.0;
@@ -63,6 +66,19 @@ void updateLighting()
 {
     
 }
+
+//function to make the texture on planet
+GLuint loadTexture(Image* image){
+    GLuint textureId;
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+    return textureId;
+}
+
+//integers for each texture
+GLuint earTexture, sunTexture;
+
 float random(int min, int max) //create a random number in a specified range
 {
     int randNum;
@@ -91,7 +107,15 @@ void createAsteroids()
     {
         glLoadIdentity();
         glTranslatef(asteroidX[i],asteroidY[i],asteroidZ[i]);
-        glutSolidSphere(.1,10,10);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, sunTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        gluQuadricTexture(quadric, 1);
+        gluSphere(quadric, .1, 10, 10);
+        //glutSolidSphere(.1,10,10);
+        glDisable(GL_TEXTURE_2D);
+        
     }
     
     glEnd();
@@ -118,7 +142,17 @@ void createShip(GLfloat orbitRadius, GLfloat radius, GLfloat period) //what crea
     glTranslatef(translateX,translateY+1,-1);
     glRotatef(90,0.0,1.0, 0.0);
     glRotatef(20*t,0.0,0.0,-2.0);
-    glutWireSphere(.1,50,10);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, earTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gluQuadricTexture(quadric, 1);
+    
+    gluSphere(quadric,.1,50,10);
+    //glutWireSphere(quadric,.1,50,10);
+    glDisable(GL_TEXTURE_2D);
+    
+    //glutWireSphere(.1,50,10);
 }
 
 
@@ -134,6 +168,11 @@ void display(void)
     glEnable(GL_POLYGON_SMOOTH);
 
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Image* ear = loadBMP("earth.bmp");		earTexture = loadTexture(ear);
+    Image* sun = loadBMP("sun.bmp");		sunTexture = loadTexture(sun);
+    quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_FILL);
+    gluDeleteQuadric(quadric);
     glEnable(GL_FOG);
     glFogi(GL_FOG_START, -30.0);
     createShip(0,5,0); //mercury
