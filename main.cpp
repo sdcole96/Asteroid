@@ -1,5 +1,4 @@
 
-
 #include <iostream>
 #include <OpenGL/gl.h>
 #include <OpenGl/glu.h>
@@ -13,6 +12,13 @@
 #import <OpenAL/alc.h>
 #import <AudioToolbox/AudioToolbox.h>
 
+// Light source position
+GLfloat light_position[] = {-1.0, 0.0, 2.0, 0.0};
+GLfloat light_position2[] = {1.0, 0.0, 2.0, 0.0};
+GLfloat light_position3[] = {0.0, 1.0, 2.0, 0.0};
+GLfloat bigLightPos[] = {0.0, 0.0, -10.0,0.0};
+
+
 double t = 0;
 double earth = 1;
 double scale = .01;
@@ -20,16 +26,6 @@ double speed = 10;
 float translateX = 0.0;
 float translateY = -1.0;
 float sunRadius = 10;
-
-
-// Light source position
-GLfloat light_position[] = {-1.0, 0.0, 2.0, 0.0};
-GLfloat light_position2[] = {1.0, 0.0, 2.0, 0.0};
-GLfloat light_position3[] = {0.0, 1.0, 2.0, 0.0};
-GLfloat bigLightPos[] = {0.0, 0.0, -10.0,0.0};
-
-GLfloat emit[] = {.5, .5, .5, 0.0};
-
 float r = 0.0;
 float g = 1.0;
 float b = 0.0;
@@ -51,8 +47,6 @@ bool downPressed = false;
 bool leftPressed = false;
 bool rightPressed = false;
 bool gameOver = false;
-
-bool eyeLevel = false;
 float width;
 float height;
 
@@ -62,6 +56,7 @@ GLuint sunTex;
 
 using namespace std;
 
+//handles various lights and updates with timerticks
 void initLighting()
 {
     // Enable lighting
@@ -91,10 +86,8 @@ void initLighting()
     glLightfv(GL_LIGHT3, GL_POSITION,bigLightPos);
 }
 
-void updateLighting()
-{
-    
-}
+
+//produces random number between min and max
 float random(int min, int max) //create a random number in a specified range
 {
     int randNum;
@@ -102,9 +95,9 @@ float random(int min, int max) //create a random number in a specified range
     return randNum;
 }
 
-//STARS
 
-void setUpAsteroids()	//to initialise array of random coords for star within coordinate space
+//initialise array of random coords for star within coordinate space
+void setUpAsteroids()
 {
     for(int i = 0; i< numOfAsteroids; i++)
     {
@@ -136,7 +129,7 @@ void createAsteroids()
     glutSwapBuffers();
 }
 
-
+//displays the 3 orbiting mini spheres around the ship
 void createPlanet(GLfloat orbitRadius, GLfloat radius, GLfloat period) //random orbit guyo
 {
     glLoadIdentity();
@@ -150,6 +143,7 @@ void createPlanet(GLfloat orbitRadius, GLfloat radius, GLfloat period) //random 
     glutWireSphere(radius*.1, 10, 2);
 }
 
+//displays the actual ship
 void createShip(GLfloat orbitRadius, GLfloat radius, GLfloat period) //what creates and updates the ship
 {
     glLoadIdentity();
@@ -167,38 +161,28 @@ void createShip(GLfloat orbitRadius, GLfloat radius, GLfloat period) //what crea
     
 }
 
-    //display pause on screen
-    void glutStroke()
-    {
-        glLoadIdentity();
-        glPushMatrix();
-        glTranslatef(-1.8,1.2,-2.0);
-        glScalef(0.005f, 0.005f, 0.005f);
-        
-        std::string s = std::to_string(asteroidsPassed);
-        char const *pchar = s.c_str();
-        
-        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[0]);
-        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[1]);
-        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[2]);
-        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[3]);
-        glPopMatrix();
-        if(gameOver)
-        {
-            glLoadIdentity();
-            glPushMatrix();
-            glTranslatef(0.0,.5,-2.0);
-            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'S');
-            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'P');
-            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'A');
-            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'C');
-            glPopMatrix();
-        }
-        glutSwapBuffers();
-      
-        glEnd();
-    }
+//displays score on screen
+void glutStroke()
+{
+    glLoadIdentity();
+    glPushMatrix();
+    glTranslatef(-1.8,1.2,-2.0);
+    glScalef(0.005f, 0.005f, 0.005f);
+    
+    std::string s = std::to_string(asteroidsPassed);
+    char const *pchar = s.c_str();
+    
+    glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, pchar[0]);
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[1]);
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[2]);
+    glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[3]);
+    glPopMatrix();
+    glutSwapBuffers();
+    
+    glEnd();
+}
 
+//initializes and calls necessary display methods
 void display(void)
 {
     glLoadIdentity();
@@ -226,6 +210,8 @@ void display(void)
     glutSwapBuffers();
 }
 
+
+//handles collision detection
 void shipHasBeenHit()
 {
     
@@ -273,7 +259,7 @@ void reshape (int w, int h)
     glLoadIdentity();
 }
 
-
+//increments global variable t
 void TimerFunction()
 {
     r = cos(t);
@@ -331,11 +317,7 @@ void TimerFunction()
         glutStroke();
 }
 
-void mouse(int x, int y)
-{
-    
-}
-
+//starts game over
 void restart()
 {
     t = 0;
@@ -344,6 +326,7 @@ void restart()
     glutPostRedisplay();
 }
 
+//takes keyboard input and flags a "holding" bool on
 void specialInput(int key, int x, int y)
 {
     switch(key)
@@ -379,6 +362,8 @@ void specialInput(int key, int x, int y)
     glutPostRedisplay();
 }
 
+
+//takes keyboard release, using booleans to bypass the poor hold lag in openGL
 void specialInputUp(int key, int x, int y)
 {
     switch(key)
@@ -407,6 +392,7 @@ void specialInputUp(int key, int x, int y)
     glutPostRedisplay();
 }
 
+//loads textures in
 void loadTexture(GLuint* texture, char* path){
     *texture = SOIL_load_OGL_texture(path,
                                      SOIL_LOAD_AUTO,
@@ -437,6 +423,7 @@ int main(int argc,char * argv[])
     // Initialization
     glOrtho(0, 1000, 0, 1000, 0, 1000);
     glutAttachMenu(GLUT_LEFT_BUTTON);
+    
     // ----- Texture stuff -------
     string str = "earth.bmp";
     char * writable = new char[str.size() + 1];
@@ -451,6 +438,7 @@ int main(int argc,char * argv[])
     loadTexture(&earthTex, writable);
     loadTexture(&sunTex, writable2);
     //------------------------------
+    
     glutMainLoop();
     delete[] writable;
     return 0;
