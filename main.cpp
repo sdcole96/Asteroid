@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <unistd.h>
+#include "SOIL2.h"
 #import <OpenAL/al.h>
 #import <OpenAL/alc.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -54,6 +55,12 @@ bool gameOver = false;
 bool eyeLevel = false;
 float width;
 float height;
+
+GLUquadricObj *quadric;
+GLuint earthTex;
+GLuint sunTex;
+
+using namespace std;
 
 void initLighting()
 {
@@ -116,7 +123,13 @@ void createAsteroids()
     {
         glLoadIdentity();
         glTranslatef(asteroidX[i],asteroidY[i],asteroidZ[i]);
-        glutSolidSphere(.1,20,10);
+        //adding texture to asteroid
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, sunTex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        gluQuadricTexture(quadric, 1);
+        gluSphere(quadric, .1, 20, 10);
     }
     
     glEnd();
@@ -143,7 +156,15 @@ void createShip(GLfloat orbitRadius, GLfloat radius, GLfloat period) //what crea
     glTranslatef(translateX,translateY+1,-1);
     glRotatef(90,0.0,1.0, 0.0);
     glRotatef(20*t,0.0,0.0,-2.0);
-    glutWireSphere(.1,50,10);
+    
+    //adding texture to ship
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, earthTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gluQuadricTexture(quadric, 1);
+    gluSphere(quadric,.1,50,10);
+    
 }
 
     //display pause on screen
@@ -189,6 +210,12 @@ void display(void)
     glEnable(GL_POLYGON_SMOOTH);
     
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //enable quadric
+    quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_FILL);
+    gluQuadricTexture(quadric, TRUE);
+    gluQuadricNormals(quadric, GLU_SMOOTH);
+    gluDeleteQuadric(quadric);
     glEnable(GL_FOG);
     glFogi(GL_FOG_START, -30.0);
     createShip(0,5,0); //mercury
@@ -380,6 +407,17 @@ void specialInputUp(int key, int x, int y)
     glutPostRedisplay();
 }
 
+void loadTexture(GLuint* texture, char* path){
+    *texture = SOIL_load_OGL_texture(path,
+                                     SOIL_LOAD_AUTO,
+                                     SOIL_CREATE_NEW_ID,
+                                     SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA
+                                     );
+    if(*texture == NULL){
+        printf("[Texture loader] \"%s\" failed to load!\n", path);
+    }
+}
+
 int main(int argc,char * argv[])
 {
     srand(time(NULL));
@@ -399,6 +437,21 @@ int main(int argc,char * argv[])
     // Initialization
     glOrtho(0, 1000, 0, 1000, 0, 1000);
     glutAttachMenu(GLUT_LEFT_BUTTON);
+    // ----- Texture stuff -------
+    string str = "earth.bmp";
+    char * writable = new char[str.size() + 1];
+    copy(str.begin(), str.end(), writable);
+    writable[str.size()] = '\0'; // don't forget the terminating 0
+    // don't forget to free the string after finished using it
+    string str2 = "sun.bmp";
+    char * writable2 = new char[str2.size() + 1];
+    copy(str2.begin(), str2.end(), writable2);
+    writable2[str2.size()] = '\0';
+    
+    loadTexture(&earthTex, writable);
+    loadTexture(&sunTex, writable2);
+    //------------------------------
     glutMainLoop();
+    delete[] writable;
     return 0;
 }
