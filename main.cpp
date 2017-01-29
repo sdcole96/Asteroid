@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <unistd.h>
-#include "imageloader.h"
 #import <OpenAL/al.h>
 #import <OpenAL/alc.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -24,22 +23,27 @@ float sunRadius = 10;
 
 // Light source position
 GLfloat light_position[] = {-1.0, 0.0, 2.0, 0.0};
-GLfloat light_position2[] = {1.0, 0.0, 0.0, 0.0};
-GLfloat emit[] = {.5, .5, .5, 0.0};
+GLfloat light_position2[] = {1.0, 0.0, 2.0, 0.0};
+GLfloat light_position3[] = {0.0, 1.0, 2.0, 0.0};
+GLfloat bigLightPos[] = {0.0, 0.0, -10.0,0.0};
 
-GLUquadricObj *quadric;
+GLfloat emit[] = {.5, .5, .5, 0.0};
 
 float r = 0.0;
 float g = 1.0;
 float b = 0.0;
 int numOfAsteroids = 9;
+float r1 = 0.0;
+float r2 = 0.0;
+float r3 = 1.0;
+float g1;
+float g2;
+float g3;
 float asteroidX[9];	//arrays for to store asteroid coords
 float asteroidY[9];
 float asteroidZ[9];
 
 int asteroidsPassed = 0;
-
-
 
 bool upPressed = false;
 bool downPressed = false;
@@ -57,28 +61,33 @@ void initLighting()
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     GLfloat red[] = {r,g,b,0.0};
+    GLfloat blue[] = {r1,r2,r3,0.0};
+    GLfloat green[] = {g1, g2, g3, 0.0};
+    GLfloat white[] = {1.0,1.0,1.0,0.0};
     // Set the light position
     glLightfv(GL_LIGHT0, GL_DIFFUSE,red);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, red);
     glLightfv(GL_LIGHT0, GL_POSITION,light_position);
+    
+    glEnable(GL_LIGHT1);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE,blue);
+    glLightfv(GL_LIGHT1, GL_POSITION,light_position2);
+    
+    glEnable(GL_LIGHT2);
+    glLightfv(GL_LIGHT2, GL_DIFFUSE,green);
+    glLightfv(GL_LIGHT2, GL_POSITION,light_position3);
+    
+    glEnable(GL_LIGHT3);
+    glLightfv(GL_LIGHT3, GL_DIFFUSE,white);
+    glLightfv(GL_LIGHT3, GL_AMBIENT, white);
+    glLightfv(GL_LIGHT3, GL_EMISSION, white);
+    glLightfv(GL_LIGHT3, GL_POSITION,bigLightPos);
 }
 
 void updateLighting()
 {
     
 }
-
-//function to make the texture on planet
-GLuint loadTexture(Image* image){
-    GLuint textureId;
-    glGenTextures(1, &textureId);
-    glBindTexture(GL_TEXTURE_2D, textureId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
-    return textureId;
-}
-
-//integers for each texture
-GLuint earTexture, sunTexture;
-
 float random(int min, int max) //create a random number in a specified range
 {
     int randNum;
@@ -107,15 +116,7 @@ void createAsteroids()
     {
         glLoadIdentity();
         glTranslatef(asteroidX[i],asteroidY[i],asteroidZ[i]);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, sunTexture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        gluQuadricTexture(quadric, 1);
-        gluSphere(quadric, .1, 10, 10);
-        //glutSolidSphere(.1,10,10);
-        glDisable(GL_TEXTURE_2D);
-        
+        glutSolidSphere(.1,20,10);
     }
     
     glEnd();
@@ -131,7 +132,7 @@ void createPlanet(GLfloat orbitRadius, GLfloat radius, GLfloat period) //random 
     glLoadIdentity();
     glTranslatef(cos(t+180)/5+ translateX,translateY+1,-1 + sin(t+180)/5);
     glutSolidSphere(radius*.1, 10, 2);
-      glLoadIdentity();
+    glLoadIdentity();
     glTranslatef(cos(t+90)/5+ translateX,translateY+1,-1 + sin(t+90)/5);
     glutWireSphere(radius*.1, 10, 2);
 }
@@ -142,20 +143,40 @@ void createShip(GLfloat orbitRadius, GLfloat radius, GLfloat period) //what crea
     glTranslatef(translateX,translateY+1,-1);
     glRotatef(90,0.0,1.0, 0.0);
     glRotatef(20*t,0.0,0.0,-2.0);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, earTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    gluQuadricTexture(quadric, 1);
-    
-    gluSphere(quadric,.1,50,10);
-    //glutWireSphere(quadric,.1,50,10);
-    glDisable(GL_TEXTURE_2D);
-    
-    //glutWireSphere(.1,50,10);
+    glutWireSphere(.1,50,10);
 }
 
-
+    //display pause on screen
+    void glutStroke()
+    {
+        glLoadIdentity();
+        glPushMatrix();
+        glTranslatef(-1.8,1.2,-2.0);
+        glScalef(0.005f, 0.005f, 0.005f);
+        
+        std::string s = std::to_string(asteroidsPassed);
+        char const *pchar = s.c_str();
+        
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[0]);
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[1]);
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[2]);
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, pchar[3]);
+        glPopMatrix();
+        if(gameOver)
+        {
+            glLoadIdentity();
+            glPushMatrix();
+            glTranslatef(0.0,.5,-2.0);
+            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'S');
+            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'P');
+            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'A');
+            glutStrokeCharacter(GLUT_STROKE_ROMAN, 'C');
+            glPopMatrix();
+        }
+        glutSwapBuffers();
+      
+        glEnd();
+    }
 
 void display(void)
 {
@@ -166,26 +187,16 @@ void display(void)
     glShadeModel (GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_POLYGON_SMOOTH);
-
+    
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Image* ear = loadBMP("earth.bmp");		earTexture = loadTexture(ear);
-    Image* sun = loadBMP("sun.bmp");		sunTexture = loadTexture(sun);
-    quadric = gluNewQuadric();
-    gluQuadricDrawStyle(quadric, GLU_FILL);
-    gluDeleteQuadric(quadric);
     glEnable(GL_FOG);
     glFogi(GL_FOG_START, -30.0);
     createShip(0,5,0); //mercury
     createPlanet(.1,.1,5);
     createAsteroids();
-    
+    glutStroke();
     glEnd();
     glutSwapBuffers();
-}
-
-void createStars(int intensity)
-{
-    
 }
 
 void shipHasBeenHit()
@@ -195,7 +206,9 @@ void shipHasBeenHit()
     {
         bool xColl = false;
         bool yColl = false;
-        if(asteroidZ[i] > -1.1 && asteroidZ[i] < -.90)
+        float astY = asteroidY[i] + .1;
+        float transY = translateY + .1 + 1;
+        if(asteroidZ[i] > -1.1 && asteroidZ[i] < -.95)
         {
             if((asteroidX[i] - .1 < translateX + .1) && asteroidX[i] -.1 > translateX - .1)
             {
@@ -205,11 +218,11 @@ void shipHasBeenHit()
             {
                 xColl = true;
             }
-            if((asteroidY[i] + .1 < translateY + .1 + 1) && asteroidY[i] + .1 > translateY + .1 - 1 )
+            if((asteroidY[i] + .1 < translateY + .1 + 1) && asteroidY[i] + .1 > translateY - .1 + 1 )
             {
                 yColl = true;
             }
-            if((asteroidY[i] - .1 < translateY + .1 +1) && asteroidY[i] - .1 > translateY + .1 - 1 )
+            if((asteroidY[i] - .1 < translateY + .1 +1) && asteroidY[i] - .1 > translateY - .1 + 1 )
             {
                 yColl = true;
             }
@@ -228,8 +241,7 @@ void reshape (int w, int h)
     glViewport (0, 0, (GLsizei) w, (GLsizei) h);
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90,w/h,.1,1000);
-    
+    gluPerspective(90,w/h,.2,30);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
@@ -237,33 +249,40 @@ void reshape (int w, int h)
 
 void TimerFunction()
 {
-    r = cos(t/50);
-    b = sin(t/50);
+    r = cos(t);
+    
+    b = sin(t);
+    r1 = 1.0;
+    r2 = sin(-t);
+    r3 = 1.0;
+    g1 = 1.0;
+    g2 = -sin(-t/2);
+    g3 = -cos(t/2);
     initLighting();
     if(gameOver == false)
     {
-    t += .1;
-    shipHasBeenHit();
-    if(leftPressed && translateX > -.75)
-    {
-        translateX -= .05;
-    }
-    else if(rightPressed && translateX < .75)
-    {
-        translateX += .05;
-    }
-    if(upPressed && translateY < -.25)
-    {
-        translateY += .05;
-    }
-    else if(downPressed && translateY > -1.75)
-    {
-        translateY -= .05;
-    }
-    
-    for(int i = 0; i< numOfAsteroids; i++)
-    {
-            if(asteroidZ[i] < 2)
+        t += .1;
+        shipHasBeenHit();
+        if(leftPressed && translateX > -.75)
+        {
+            translateX -= .05;
+        }
+        else if(rightPressed && translateX < .75)
+        {
+            translateX += .05;
+        }
+        if(upPressed && translateY < -.25)
+        {
+            translateY += .05;
+        }
+        else if(downPressed && translateY > -1.75)
+        {
+            translateY -= .05;
+        }
+        
+        for(int i = 0; i< numOfAsteroids; i++)
+        {
+            if(asteroidZ[i] < 0)
             {
                 asteroidZ[i] += .1 + t*(.001);
             }
@@ -274,17 +293,20 @@ void TimerFunction()
                 asteroidZ[i] -= 10;
                 ++asteroidsPassed;
             }
-   
+            
+            
+        }
+        
+        glutPostRedisplay();
+        glutSwapBuffers();
     }
-     
-    glutPostRedisplay();
-    glutSwapBuffers();
-    }
+    else
+        glutStroke();
 }
 
 void mouse(int x, int y)
 {
-
+    
 }
 
 void restart()
@@ -358,10 +380,6 @@ void specialInputUp(int key, int x, int y)
     glutPostRedisplay();
 }
 
-
-
-
-
 int main(int argc,char * argv[])
 {
     srand(time(NULL));
@@ -376,7 +394,6 @@ int main(int argc,char * argv[])
     glutSpecialUpFunc(specialInputUp);
     glutIdleFunc(TimerFunction);
     glutReshapeFunc(reshape);
-    glutPassiveMotionFunc(mouse);
     initLighting();
     glEnable(GL_DEPTH_TEST);
     // Initialization
